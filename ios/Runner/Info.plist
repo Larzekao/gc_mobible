@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Esta app requiere acceso a la cámara para reconocimiento facial y de placas.</string>
 </dict>
 </plist>

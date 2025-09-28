@@ -1,1 +1,4 @@
-const String baseUrl = 'https://tu-api.com/api'; // Cambia esta URL por la de tu API real
+class Config {
+  static const String baseUrl = 'https://condominium-api-staging.up.railway.app';
+}
+
