@@ -1,110 +1,71 @@
 class Reserva {
   final int? id;
-  final int residenteId; // Solo ID, no objeto
-  final int areaId; // Solo ID, no objeto  
-  final String nombre;
+  final int residenteId;
+  final int areaId;
   final String? descripcion;
-  
-  // Campos adicionales que podrías agregar en Django
   final DateTime? fechaReserva;
   final String? horaInicio;
   final String? horaFin;
-  final String? estado; // 'activa', 'cancelada', 'completada'
-  final DateTime? fechaCreacion;
+  final String? estado;
+  final double? montoTotal;
+
+  // Para mostrar datos relacionados
+  final String? residenteNombre;
+  final String? areaNombre;
 
   Reserva({
     this.id,
     required this.residenteId,
     required this.areaId,
-    required this.nombre,
     this.descripcion,
     this.fechaReserva,
     this.horaInicio,
     this.horaFin,
     this.estado,
-    this.fechaCreacion,
+    this.montoTotal,
+    this.residenteNombre,
+    this.areaNombre,
   });
 
   factory Reserva.fromJson(Map<String, dynamic> json) {
+    double? parseMonto(dynamic value) {
+      if (value == null) return null;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value);
+      return null;
+    }
+
     return Reserva(
       id: json['id'],
-      residenteId: json['residente'], // Solo el ID
-      areaId: json['area'], // Solo el ID
-      nombre: json['nombre'] ?? '',
+      residenteId: json['residente_id'] ?? json['residente']?['id'] ?? 0,
+      areaId: json['area_id'] ?? json['area']?['id'] ?? 0,
       descripcion: json['descripcion'],
-      fechaReserva: json['fecha_reserva'] != null 
-        ? DateTime.parse(json['fecha_reserva']) 
-        : null,
+      fechaReserva: json['fecha_reserva'] != null
+          ? DateTime.parse(json['fecha_reserva'])
+          : null,
       horaInicio: json['hora_inicio'],
       horaFin: json['hora_fin'],
-      estado: json['estado'] ?? 'activa',
-      fechaCreacion: json['fecha_creacion'] != null 
-        ? DateTime.parse(json['fecha_creacion']) 
-        : null,
+      estado: json['estado'] ?? 'pendiente',
+      montoTotal: parseMonto(json['monto_total']),
+      residenteNombre: json['residente']?['nombre'],
+      areaNombre: json['area']?['nombre'],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'residente': residenteId,
-      'area': areaId,
-      'nombre': nombre,
-      'descripcion': descripcion,
+      if (id != null) 'id': id,
+      'residente_id': residenteId,
+      'area_id': areaId,
+      'descripcion': descripcion ?? '',
       'fecha_reserva': fechaReserva?.toIso8601String().split('T')[0],
       'hora_inicio': horaInicio,
       'hora_fin': horaFin,
-      'estado': estado,
+      'estado': estado ?? 'pendiente',
+      'monto_total': montoTotal ?? 0.0,
     };
   }
 
-  Reserva copyWith({
-    int? id,
-    int? residenteId,
-    int? areaId,
-    String? nombre,
-    String? descripcion,
-    DateTime? fechaReserva,
-    String? horaInicio,
-    String? horaFin,
-    String? estado,
-    DateTime? fechaCreacion,
-  }) {
-    return Reserva(
-      id: id ?? this.id,
-      residenteId: residenteId ?? this.residenteId,
-      areaId: areaId ?? this.areaId,
-      nombre: nombre ?? this.nombre,
-      descripcion: descripcion ?? this.descripcion,
-      fechaReserva: fechaReserva ?? this.fechaReserva,
-      horaInicio: horaInicio ?? this.horaInicio,
-      horaFin: horaFin ?? this.horaFin,
-      estado: estado ?? this.estado,
-      fechaCreacion: fechaCreacion ?? this.fechaCreacion,
-    );
-  }
-
-  // Propiedades de conveniencia
-  String get estadoTexto {
-    switch (estado) {
-      case 'activa': return 'Activa';
-      case 'cancelada': return 'Cancelada';
-      case 'completada': return 'Completada';
-      default: return estado ?? 'Sin estado';
-    }
-  }
-
-  String get horarioTexto {
-    if (horaInicio != null && horaFin != null) {
-      return '$horaInicio - $horaFin';
-    }
-    return 'Sin horario definido';
-  }
-
-  bool get puedeSerCancelada => estado == 'activa' && 
-    fechaReserva != null && 
-    fechaReserva!.isAfter(DateTime.now());
-
-  @override
-  String toString() => 'Reserva: $nombre';
+  bool get puedeSerCancelada => estado == 'pendiente' || estado == 'confirmada';
 }

@@ -7,7 +7,7 @@ class LoginService {
   final String _baseUrl = Config.baseUrl;
 
   Future<bool> login(String correo, String password) async {
-    final url = Uri.parse('$_baseUrl/api/cuenta/token/');
+    final url = Uri.parse('$_baseUrl/cuenta/token/');
     print('📡 Intentando login a: $url');
     int retries = 3;
 
@@ -16,10 +16,7 @@ class LoginService {
         final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'correo': correo,
-            'password': password,
-          }),
+          body: jsonEncode({'correo': correo, 'password': password}),
         );
 
         if (response.statusCode == 200) {
@@ -55,7 +52,6 @@ class LoginService {
     return false;
   }
 
-
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('jwt_token');
@@ -64,5 +60,21 @@ class LoginService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    await prefs.remove('user_data');
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userDataString = prefs.getString('user_data');
+
+      if (userDataString != null) {
+        return jsonDecode(userDataString);
+      }
+      return null;
+    } catch (e) {
+      print('Error obteniendo usuario: $e');
+      return null;
+    }
   }
 }

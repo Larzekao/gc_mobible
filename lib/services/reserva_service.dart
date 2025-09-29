@@ -1,81 +1,93 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/reserva.dart';
 import '../utils/config.dart';
+import 'login_services.dart';
 
 class ReservaService {
-  final String baseUrl = Config.baseUrl + '/api/reservas/';//cmabiar la ruta o subir 
+  final LoginService _loginService = LoginService();
+
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await _loginService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<List<Reserva>> fetchReservas() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.get(
-      Uri.parse(baseUrl),
-      headers: token != null ? {'Authorization': 'Bearer $token'} : {},
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((e) => Reserva.fromJson(e)).toList();
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al cargar reservas');
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/reservas/'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Reserva.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        throw Exception('Error al cargar reservas');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<Reserva> createReserva(Reserva reserva) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: json.encode(reserva.toJson()),
-    );
-    if (response.statusCode == 201) {
-      return Reserva.fromJson(json.decode(response.body));
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al crear reserva');
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.post(
+        Uri.parse('${Config.baseUrl}/reservas/'),
+        headers: headers,
+        body: jsonEncode(reserva.toJson()),
+      );
+      if (response.statusCode == 201) {
+        return Reserva.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 401) {
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        print('Error response: ${response.body}');
+        throw Exception('Error al crear reserva');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 
-  Future<Reserva> updateReserva(int id, Reserva reserva) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.put(
-      Uri.parse('$baseUrl$id/'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: json.encode(reserva.toJson()),
-    );
-    if (response.statusCode == 200) {
-      return Reserva.fromJson(json.decode(response.body));
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al actualizar reserva');
+  Future<void> cancelarReserva(int id) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.patch(
+        Uri.parse('${Config.baseUrl}/reservas/$id/'),
+        headers: headers,
+        body: jsonEncode({'estado': 'cancelada'}),
+      );
+      if (response.statusCode == 401) {
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else if (response.statusCode != 200) {
+        throw Exception('Error al cancelar reserva');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 
   Future<void> deleteReserva(int id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.delete(
-      Uri.parse('$baseUrl$id/'),
-      headers: token != null ? {'Authorization': 'Bearer $token'} : {},
-    );
-    if (response.statusCode != 204) {
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.delete(
+        Uri.parse('${Config.baseUrl}/reservas/$id/'),
+        headers: headers,
+      );
       if (response.statusCode == 401) {
-        throw Exception('No autorizado. Inicia sesión nuevamente.');
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else if (response.statusCode != 204) {
+        throw Exception('Error al eliminar reserva');
       }
-      throw Exception('Error al eliminar reserva');
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 }

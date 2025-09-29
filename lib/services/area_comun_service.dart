@@ -2,82 +2,59 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/area_comun.dart';
 import '../utils/config.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'login_services.dart';
 
 class AreaComunService {
-  final String baseUrl = Config.baseUrl + '/api/areas-comunes/';
+  final LoginService _loginService = LoginService();
+
+  Future<Map<String, String>> _getAuthHeaders() async {
+    final token = await _loginService.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
 
   Future<List<AreaComun>> fetchAreas() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.get(
-      Uri.parse(baseUrl),
-      headers: token != null
-          ? {'Authorization': 'Bearer $token'}
-          : {},
-    );
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((e) => AreaComun.fromJson(e)).toList();
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al cargar áreas comunes');
-    }
-  }
-
-  Future<AreaComun> createArea(AreaComun area) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: json.encode(area.toJson()),
-    );
-    if (response.statusCode == 201) {
-      return AreaComun.fromJson(json.decode(response.body));
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al crear área común');
-    }
-  }
-
-  Future<AreaComun> updateArea(int id, AreaComun area) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.put(
-      Uri.parse('$baseUrl$id/'),
-      headers: {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: json.encode(area.toJson()),
-    );
-    if (response.statusCode == 200) {
-      return AreaComun.fromJson(json.decode(response.body));
-    } else if (response.statusCode == 401) {
-      throw Exception('No autorizado. Inicia sesión nuevamente.');
-    } else {
-      throw Exception('Error al actualizar área común');
-    }
-  }
-
-  Future<void> deleteArea(int id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    final response = await http.delete(
-      Uri.parse('$baseUrl$id/'),
-      headers: token != null ? {'Authorization': 'Bearer $token'} : {},
-    );
-    if (response.statusCode != 204) {
-      if (response.statusCode == 401) {
-        throw Exception('No autorizado. Inicia sesión nuevamente.');
+    try {
+      final headers = await _getAuthHeaders();
+      final response = await http.get(
+        Uri.parse('${Config.baseUrl}/areas-comunes/'),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => AreaComun.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        throw Exception('Error al cargar áreas');
       }
-      throw Exception('Error al eliminar área común');
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
+  Future<List<AreaComun>> fetchAreasDisponibles(DateTime fecha) async {
+    try {
+      final headers = await _getAuthHeaders();
+      final fechaStr = fecha.toIso8601String().split('T')[0];
+      final response = await http.get(
+        Uri.parse(
+          '${Config.baseUrl}/areas-comunes/?fecha=$fechaStr&disponible=true',
+        ),
+        headers: headers,
+      );
+      if (response.statusCode == 200) {
+        List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => AreaComun.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Token expirado. Por favor, inicia sesión nuevamente.');
+      } else {
+        throw Exception('Error al cargar áreas disponibles');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
     }
   }
 }

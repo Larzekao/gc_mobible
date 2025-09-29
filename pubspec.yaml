@@ -37,11 +37,12 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.5.0
   shared_preferences: ^2.5.3
+  url_launcher: ^6.2.5
 
   # UI y Navigation
   material_design_icons_flutter: ^7.0.0
-  camera: ^0.11.2
-  
+  camera: ^0.10.5
+  flutter_stripe: ^9.1.0
 
 dev_dependencies:
   flutter_test:
