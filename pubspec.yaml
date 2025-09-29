@@ -43,6 +43,8 @@ dependencies:
   material_design_icons_flutter: ^7.0.0
   camera: ^0.10.5
   flutter_stripe: ^9.1.0
+  image_picker: ^1.0.7
+  dio: ^5.4.0
 
 dev_dependencies:
   flutter_test:
