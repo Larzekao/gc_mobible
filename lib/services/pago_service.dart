@@ -41,13 +41,13 @@ class PagoService {
     }
   }
 
-  Future<void> confirmarPago(String paymentIntentId) async {
+  Future<void> confirmarPagoFacturaBackend(int facturaId) async {
     try {
       final headers = await _getAuthHeaders();
       final response = await http.post(
         Uri.parse('${Config.baseUrl}/pagos/confirmar_pago/'),
         headers: headers,
-        body: jsonEncode({'payment_intent_id': paymentIntentId}),
+        body: jsonEncode({'factura_id': facturaId}),
       );
 
       if (response.statusCode == 401) {

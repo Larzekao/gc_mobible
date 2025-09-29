@@ -42,9 +42,10 @@ dependencies:
   # UI y Navigation
   material_design_icons_flutter: ^7.0.0
   camera: ^0.10.5
-  flutter_stripe: ^9.1.0
+  flutter_stripe: ^9.4.0
   image_picker: ^1.0.7
   dio: ^5.4.0
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -98,3 +99,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/iconApp.png"
+  adaptive_icon_background: "#0EA5A3"   # opcional, para Android adaptive
+  adaptive_icon_foreground: "assets/iconApp.png"  # usa el mismo PNG sencillo

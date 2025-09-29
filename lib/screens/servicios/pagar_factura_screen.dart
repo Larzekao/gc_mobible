@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_stripe/flutter_stripe.dart' hide Card;
 import '../../models/factura.dart';
-import '../../models/pago.dart';
+
 import '../../services/pago_service.dart';
 
 class PagarFacturaScreen extends StatefulWidget {
@@ -18,7 +17,6 @@ class _PagarFacturaScreenState extends State<PagarFacturaScreen> {
   final PagoService _pagoService = PagoService();
   bool _isProcessing = false;
   String _mensaje = '';
-  PaymentIntentResponse? _paymentIntent;
 
   @override
   Widget build(BuildContext context) {
@@ -313,58 +311,22 @@ class _PagarFacturaScreenState extends State<PagarFacturaScreen> {
   }
 
   Future<void> _procesarPago() async {
-    if (kIsWeb) {
-      setState(
-        () => _mensaje =
-            'Los pagos no están disponibles en navegador web. Use un dispositivo móvil.',
-      );
-      return;
-    }
-
     setState(() {
       _isProcessing = true;
       _mensaje = '';
     });
 
     try {
-      setState(() => _mensaje = 'Preparando pago...');
-      _paymentIntent = await _pagoService.crearPaymentIntent(
-        widget.factura.id!,
-      );
-
-      setState(() => _mensaje = 'Configurando método de pago...');
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          paymentIntentClientSecret: _paymentIntent!.clientSecret,
-          merchantDisplayName: 'Smart Condominium',
-          style: ThemeMode.light,
-          appearance: const PaymentSheetAppearance(
-            colors: PaymentSheetAppearanceColors(primary: Color(0xFF4CAF50)),
-          ),
-        ),
-      );
-
-      setState(() => _mensaje = 'Abriendo formulario de pago...');
-      await Stripe.instance.presentPaymentSheet();
-
-      setState(() => _mensaje = 'Confirmando pago...');
-      await _pagoService.confirmarPago(_paymentIntent!.paymentIntentId);
+      setState(() => _mensaje = 'Procesando pago en el servidor...');
+      // Aquí solo llamas al backend para procesar el pago
+      await _pagoService.confirmarPagoFacturaBackend(widget.factura.id!);
 
       setState(() => _mensaje = '¡Pago realizado exitosamente!');
       await Future.delayed(const Duration(seconds: 2));
       Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
-        if (e is StripeException) {
-          if (e.error.code == FailureCode.Canceled) {
-            _mensaje = 'Pago cancelado por el usuario';
-          } else {
-            _mensaje =
-                'Error de pago: ${e.error.message ?? 'Error desconocido'}';
-          }
-        } else {
-          _mensaje = 'Error al procesar pago: ${e.toString()}';
-        }
+        _mensaje = 'Error al procesar pago: ${e.toString()}';
       });
     } finally {
       setState(() => _isProcessing = false);
